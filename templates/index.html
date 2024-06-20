@@ -50,17 +50,6 @@
     </div>
 
     <script>
-        function setdefault_uid(uid){
-            let uid = localStorage.getItem("uid");
-            if (uid !== null){
-                uid = uid+"#"+Math.random().toString().slice(2,8);
-                localStorage.setItem("uid", uid)
-            }
-            return uid;
-        }
-    </script>
-
-    <script>
         const room_id = "{{ room_id }}";
         console.log(">>> room_id: ", room_id)
 
@@ -83,11 +72,20 @@
             }
         });
 
+        function setdefault_uid(user_id){
+            let uid = localStorage.getItem("uid");
+            if (uid === null){
+                uid = user_id+"#"+Math.random().toString().slice(2,8);
+                localStorage.setItem("uid", uid)
+            }
+            return uid;
+        }
+
         async function loadMessage() {
             // 加载消息
             const response = await (await fetch(`http://${apiHost}/mesage/query?room_id=${room_id}`)).json();
-            console.log(response)
-            response.data.forEach(({ msg, uid }) => displayMessage(msg, uid))
+            console.log("load", response)
+            response.data.forEach(({ msg, uid }) => {displayMessage(msg, uid);})
         }
 
         function sendMessage() {

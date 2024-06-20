@@ -20,21 +20,27 @@ class Message:
 class DB:
     def __init__(self):
         self.redis_config = {
-            "host": "",
-            "port": "",
-            "passwd": "",
+            "host": "127.0.0.1",
+            "port": "6379",
+            "passwd": None,
             "db": "1",
             "room_max_online": 30,  # 房间最大在线人数
             "room_key": "EmojiChat::room",
         }
 
-        self.db = redis.Redis()
-        self.DEFAULT_ROOM_ID = "WECHAT#1000"  # 默认房间名
+        self.db = redis.Redis(
+            host=self.redis_config["host"],
+            port=self.redis_config["port"],
+            password=self.redis_config["passwd"],
+            db=self.redis_config["db"],
+            decode_responses=True
+        )
+        self.DEFAULT_ROOM_ID = "WECHAT@1000"  # 默认房间名
 
     def __rand_room_id(self):
         # 随机生成搞一个房间 ID
         while True:
-            room_id = random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=4) + "#" + random.randint(1000, 9999)
+            room_id = random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=4) + "@" + random.randint(1000, 9999)
             if self.db.hexists(self.redis_config["room_key"], room_id) == 0:
                 break
         return room_id
@@ -67,9 +73,9 @@ class DB:
     def get_message(self, room_id: str):
         # 查询房间中的历史消息
         message_list = self.db.lrange(f"EmojiChat::{room_id}::message", 0, -1)
-        return message_list
+        return [json.loads(msg) for msg in message_list]
     
-    def new_message(self, room_id:str, message:Message):
+    def new_message(self, message:Message):
         if message.ts is None:
             message.ts = int(time.time())
 

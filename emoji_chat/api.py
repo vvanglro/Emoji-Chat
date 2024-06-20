@@ -52,7 +52,7 @@ manager = ConnectionManager()
 
 @app.get("/")
 async def get(request: Request, rid:str=None):
-    room_id = db.DEFAULT_ROOM_ID or rid
+    room_id = rid or db.DEFAULT_ROOM_ID
     return templates.TemplateResponse(
         request=request, name="index.html", context={"room_id": room_id}
     )
@@ -60,7 +60,8 @@ async def get(request: Request, rid:str=None):
 
 @app.get("/mesage/query")
 async def get_message(room_id: str):
-    return {"data": db.query(room_id)}
+    print(db.get_message(room_id))
+    return {"data": db.get_message(room_id)}
 
 
 @app.post("/api/decrypt")
@@ -78,10 +79,10 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             try:
                 data = json.loads(data)
+                print(data)
                 data["msg"] = ob64.encode(data["msg"].encode("utf-8")).decode("utf-8")
                 msg = Message(**data)
                 db.new_message(msg)
-                print(data, msg)
                 await manager.broadcast(websocket, msg)
             except Exception as e:
                 raise ValueError("Message 数据错误: " + str(e))
