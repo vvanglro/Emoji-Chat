@@ -50,6 +50,17 @@
     </div>
 
     <script>
+        function setdefault_uid(uid){
+            let uid = localStorage.getItem("uid");
+            if (uid !== null){
+                uid = uid+"#"+Math.random().toString().slice(2,8);
+                localStorage.setItem("uid", uid)
+            }
+            return uid;
+        }
+    </script>
+
+    <script>
         const room_id = "{{ room_id }}";
         console.log(">>> room_id: ", room_id)
 
@@ -57,7 +68,7 @@
         const ws = new WebSocket(`ws://${apiHost}/ws`);
         const emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '😇', '😐', '😑', '😶', '😏', '😣', '😥', '😮', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '😒', '😓', '😔', '😕', '😲', '😷', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😬', '😰', '😱', '😳', '😵', '😡', '😠'];
         const userEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-        const uid = userEmoji.codePointAt();
+        const uid = setdefault_uid(userEmoji.codePointAt());
         const responseCache = {}; // 缓存API响应
         let canSendMessage = true; // 控制是否可以发送消息的标志
 
@@ -141,7 +152,7 @@
             messageDiv.classList.add('d-flex', 'align-items-start', 'mb-3', 'user-message');
 
             const avatarDiv = document.createElement('div');
-            avatarDiv.textContent = String.fromCodePoint(from_uid);
+            avatarDiv.textContent = String.fromCodePoint(from_uid.split("#")[0]);
             avatarDiv.classList.add('avatar');
             avatarDiv.style.fontSize = '50px';
             avatarDiv.style.lineHeight = '50px';

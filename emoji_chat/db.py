@@ -1,53 +1,78 @@
 import time
 import json
+import random
 
-from tinydb import TinyDB
+import redis
 from dataclasses import dataclass
-
-
-class DB:
-    def __init__(self):
-        self.db = TinyDB("./data.json")
-
-    def _insert(self, table_name: str, data: dict):
-        try:
-            table = self.db.table(table_name)
-            table.insert(data)
-        except:
-            return 1
-        else:
-            return 0
-
-    def _query(self, table_name: str):
-        table = self.db.table(table_name)
-        return table.all()
-
-
-db = DB()
 
 
 @dataclass
 class Message:
-    uid: int
+    uid: str
     msg: str
+    room_id: str
     ts: str = None
-    room_id: str = "0"
 
     def to_json(self):
         return json.dumps(self.__dict__)
+    
 
-
-class MessageManager:
+class DB:
     def __init__(self):
-        pass
+        self.redis_config = {
+            "host": "",
+            "port": "",
+            "passwd": "",
+            "db": "1",
+            "room_max_online": 30,  # 房间最大在线人数
+            "room_key": "EmojiChat::room",
+        }
 
-    def add(self, message: Message):
+        self.db = redis.Redis()
+        self.DEFAULT_ROOM_ID = "WECHAT#1000"  # 默认房间名
+
+    def __rand_room_id(self):
+        # 随机生成搞一个房间 ID
+        while True:
+            room_id = random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=4) + "#" + random.randint(1000, 9999)
+            if self.db.hexists(self.redis_config["room_key"], room_id) == 0:
+                break
+        return room_id
+    
+    def init_room(self):
+        # 初始化房间
+        room_id = self.__rand_room_id()
+        self.db.hset(self.redis_config["room_key"], room_id, 0)  # 房间人数初始为 0
+
+    def into_room(self, uid:str, room_id:str):
+        # 用户进入房间
+        if self.db.hget(self.redis_config["room_key"], room_id) < self.redis_config["room_max_online"]:
+            self.db.hincrby(self.redis_config["room_key"], room_id, 1)
+            self.db.lpush(f"EmojiChat::{room_id}::users", uid)
+            return 1
+        else:
+            return 0
+        
+    def leave_room(self, uid:str, room_id:str):
+        # 用户离开房间
+        if self.db.hget(self.redis_config["room_key"], room_id) > 0:
+            self.db.hincrby(self.redis_config["room_key"], room_id, -1)
+            self.db.lrem(self.redis_config["room_key"], 0, uid)
+
+    def get_users(self, room_id: str):
+        # 查询房间中全部用户
+        users = self.db.lrange(f"EmojiChat::{room_id}::users", 0, -1)
+        return users
+    
+    def get_message(self, room_id: str):
+        # 查询房间中的历史消息
+        message_list = self.db.lrange(f"EmojiChat::{room_id}::message", 0, -1)
+        return message_list
+    
+    def new_message(self, room_id:str, message:Message):
         if message.ts is None:
             message.ts = int(time.time())
 
         data = message.__dict__
         room_id = data.pop("room_id")
-        return db._insert(room_id, data)
-
-    def query(self, room_id: str):
-        return db._query(table_name=room_id)
+        self.db.lpush(f"EmojiChat::{room_id}::message", message.to_json())

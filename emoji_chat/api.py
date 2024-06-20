@@ -9,7 +9,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from obscure64 import Obscure64
 
-from . import Message, MessageManager
+from . import Message, DB
 
 app = FastAPI()
 app.add_middleware(
@@ -46,13 +46,13 @@ class ConnectionManager:
                 await connection.send_text(message.to_json())
 
 
+db = DB()
 manager = ConnectionManager()
-mess = MessageManager()
 
 
 @app.get("/")
-async def get(request: Request):
-    room_id = "0"  # 设置默认房间IDs
+async def get(request: Request, rid:str=None):
+    room_id = db.DEFAULT_ROOM_ID or rid
     return templates.TemplateResponse(
         request=request, name="index.html", context={"room_id": room_id}
     )
@@ -60,7 +60,7 @@ async def get(request: Request):
 
 @app.get("/mesage/query")
 async def get_message(room_id: str):
-    return {"data": mess.query(room_id)}
+    return {"data": db.query(room_id)}
 
 
 @app.post("/api/decrypt")
@@ -80,7 +80,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 data = json.loads(data)
                 data["msg"] = ob64.encode(data["msg"].encode("utf-8")).decode("utf-8")
                 msg = Message(**data)
-                mess.add(msg)
+                db.new_message(msg)
                 print(data, msg)
                 await manager.broadcast(websocket, msg)
             except Exception as e:

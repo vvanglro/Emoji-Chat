@@ -1,1 +1,1 @@
-from .db import Message, MessageManager
+from .db import Message, DB
