@@ -9,11 +9,17 @@ dependencies = [
     "fastapi>=0.111.0",
     "obscure64>=0.1.0",
     "redis>=5.0.6",
+    "pydantic-settings>=2.3.3",
 ]
-requires-python = "==3.11.*"
+requires-python = ">=3.10,<4.0"
 readme = "README.md"
 license = {text = "MIT"}
 
 
 [tool.pdm]
 distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "pre-commit>=3.7.1",
+]

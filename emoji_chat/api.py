@@ -1,17 +1,29 @@
+from __future__ import annotations
+import asyncio
 import json
+import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from typing import List
 
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from obscure64 import Obscure64
+from starlette.websockets import WebSocketState
 
-from . import Message, DB
+from emoji_chat.db import RedisServerObj, Message
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await RedisServerObj.connect()
+    yield
+    await RedisServerObj.close()
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,38 +42,52 @@ ob64 = Obscure64(
 
 
 class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
+    @classmethod
+    async def connect(cls, room_id, user_id, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        if not await RedisServerObj.into_room(room_id, user_id):
+            await websocket.send_json({"code": 401, "msg": "人数已满"})
+            await websocket.close()
+            return False
+        return True
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+    @classmethod
+    async def disconnect(cls, room_id, user_id, websocket: WebSocket):
+        if websocket.client_state is not WebSocketState.DISCONNECTED:
+            await websocket.close()
+        await RedisServerObj.leave_room(room_id, user_id)
 
-    async def broadcast(self, websocket, message):
-        for connection in self.active_connections:
+    @classmethod
+    async def broadcast(cls, room_id, websocket, message):
+        for user_id, connection in (await RedisServerObj.get_users(room_id)).items():
             if connection != websocket:
-                await connection.send_text(message.to_json())
+                await connection.send_json(message.to_json())
 
 
-db = DB()
 manager = ConnectionManager()
 
 
+@app.post("/api/newchat")
+async def new_chat():
+    room_id = uuid.uuid4().hex
+    return {"room_id": room_id}
+
+
 @app.get("/")
-async def get(request: Request, rid:str=None):
-    room_id = rid or db.DEFAULT_ROOM_ID
+async def get_homepage(request: Request):
+    return templates.TemplateResponse(request=request, name="index.html")
+
+
+@app.get("/chat")
+async def get_chat_page(request: Request, room_id: str):
     return templates.TemplateResponse(
-        request=request, name="index.html", context={"room_id": room_id}
+        "chat.html", {"request": request, "room_id": room_id}
     )
 
 
 @app.get("/mesage/query")
 async def get_message(room_id: str):
-    print(db.get_message(room_id))
-    return {"data": db.get_message(room_id)}
+    return {"data": await RedisServerObj.get_message(room_id)}
 
 
 @app.post("/api/decrypt")
@@ -71,21 +97,40 @@ async def decrypt_message(
     return {"response": ob64.decode(body.get("message")).decode("utf-8")}
 
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+@app.websocket("/ws/{room_id}/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
+    if not await manager.connect(room_id, user_id, websocket):
+        return
+
+    # 订阅 Redis 频道
+    pubsub = RedisServerObj.pool.pubsub()
+    await pubsub.subscribe(room_id)
+
+    async def receive_messages():
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True)
+            if message:
+                receive_data = json.loads(message["data"].decode("utf-8"))
+                if (uid := receive_data.get("uid")) and uid.split("#")[1] == user_id:
+                    continue
+                await websocket.send_text(message["data"].decode("utf-8"))
+            await asyncio.sleep(0.5)
+
+    receiver_task = asyncio.create_task(receive_messages())
     try:
         while True:
-            data = await websocket.receive_text()
+            data = await websocket.receive_json()
             try:
-                data = json.loads(data)
-                print(data)
                 data["msg"] = ob64.encode(data["msg"].encode("utf-8")).decode("utf-8")
                 msg = Message(**data)
-                db.new_message(msg)
-                await manager.broadcast(websocket, msg)
+                await RedisServerObj.new_message(room_id, msg)
+                await RedisServerObj.pool.publish(room_id, msg.to_json())
+                # await manager.broadcast(room_id, websocket, msg)
             except Exception as e:
                 raise ValueError("Message 数据错误: " + str(e))
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        await manager.disconnect(room_id, user_id, websocket)
+        receiver_task.cancel()
+        await pubsub.unsubscribe(room_id)
+        await pubsub.close()

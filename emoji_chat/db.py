@@ -1,84 +1,78 @@
+from __future__ import annotations
+import dataclasses
 import time
 import json
-import random
+import redis.asyncio as redis
+from redis.asyncio.client import Redis
+from redis.asyncio.connection import ConnectionPool
 
-import redis
-from dataclasses import dataclass
+from emoji_chat.config import settings
 
 
-@dataclass
+@dataclasses.dataclass
 class Message:
     uid: str
     msg: str
     room_id: str
-    ts: str = None
+    ts: int | None = None
 
     def to_json(self):
-        return json.dumps(self.__dict__)
-    
+        return json.dumps(dataclasses.asdict(self), ensure_ascii=False)
 
-class DB:
+
+class RedisServer:
     def __init__(self):
-        self.redis_config = {
-            "host": "127.0.0.1",
-            "port": "6379",
-            "passwd": None,
-            "db": "1",
-            "room_max_online": 30,  # 房间最大在线人数
-            "room_key": "EmojiChat::room",
-        }
+        self._pool = None
+        self.room_key: str = "chat:room:"
 
-        self.db = redis.Redis(
-            host=self.redis_config["host"],
-            port=self.redis_config["port"],
-            password=self.redis_config["passwd"],
-            db=self.redis_config["db"],
-            decode_responses=True
-        )
-        self.DEFAULT_ROOM_ID = "WECHAT@1000"  # 默认房间名
+    @property
+    def pool(self) -> Redis:
+        return self._pool
 
-    def __rand_room_id(self):
-        # 随机生成搞一个房间 ID
-        while True:
-            room_id = random.choices("ABCDEFGHIJKLMNOPQRSTUVWXYZ", k=4) + "@" + random.randint(1000, 9999)
-            if self.db.hexists(self.redis_config["room_key"], room_id) == 0:
-                break
-        return room_id
-    
-    def init_room(self):
-        # 初始化房间
-        room_id = self.__rand_room_id()
-        self.db.hset(self.redis_config["room_key"], room_id, 0)  # 房间人数初始为 0
+    async def close(self) -> None:
+        """
+        Closes connection and resets pool
+        """
+        if self._pool is not None:
+            await self._pool.close()
+        self._pool = None
 
-    def into_room(self, uid:str, room_id:str):
+    async def connect(self):
+        pool = ConnectionPool.from_url(url=settings.REDIS_URL)
+        self._pool = redis.Redis(connection_pool=pool)
+        await self._pool.ping()
+
+    async def into_room(self, room_id, user_id):
         # 用户进入房间
-        if self.db.hget(self.redis_config["room_key"], room_id) < self.redis_config["room_max_online"]:
-            self.db.hincrby(self.redis_config["room_key"], room_id, 1)
-            self.db.lpush(f"EmojiChat::{room_id}::users", uid)
-            return 1
+        if (
+            len(await self.pool.hgetall(self.room_key + room_id)) + 1
+            > settings.ROOM_MAX_ONLINE
+        ):
+            return False
         else:
-            return 0
-        
-    def leave_room(self, uid:str, room_id:str):
-        # 用户离开房间
-        if self.db.hget(self.redis_config["room_key"], room_id) > 0:
-            self.db.hincrby(self.redis_config["room_key"], room_id, -1)
-            self.db.lrem(self.redis_config["room_key"], 0, uid)
+            await self.pool.hset(self.room_key + room_id, user_id, "1")
+            return True
 
-    def get_users(self, room_id: str):
+    async def leave_room(self, room_id, user_id):
+        # 用户离开房间
+        await self.pool.hdel(self.room_key + room_id, user_id)
+        if len(await self.pool.hgetall(self.room_key + room_id)) == 0:
+            await self.pool.delete(self.room_key + "msgs:" + room_id)
+
+    async def get_users(self, room_id: str) -> dict:
         # 查询房间中全部用户
-        users = self.db.lrange(f"EmojiChat::{room_id}::users", 0, -1)
-        return users
-    
-    def get_message(self, room_id: str):
+        return await self.pool.hgetall(self.room_key + room_id)
+
+    async def get_message(self, room_id: str):
         # 查询房间中的历史消息
-        message_list = self.db.lrange(f"EmojiChat::{room_id}::message", 0, -1)
+        message_list = await self.pool.lrange(self.room_key + "msgs:" + room_id, 0, -1)
         return [json.loads(msg) for msg in message_list]
-    
-    def new_message(self, message:Message):
+
+    async def new_message(self, room_id, message: Message):
         if message.ts is None:
             message.ts = int(time.time())
 
-        data = message.__dict__
-        room_id = data.pop("room_id")
-        self.db.lpush(f"EmojiChat::{room_id}::message", message.to_json())
+        await self.pool.rpush(self.room_key + "msgs:" + room_id, message.to_json())
+
+
+RedisServerObj = RedisServer()
