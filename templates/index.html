@@ -53,7 +53,7 @@
         const room_id = "{{ room_id }}";
         console.log(">>> room_id: ", room_id)
 
-        const apiHost = "localhost:8000";
+        const apiHost = window.location.host;
         const ws = new WebSocket(`ws://${apiHost}/ws`);
         const emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '😇', '😐', '😑', '😶', '😏', '😣', '😥', '😮', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '😒', '😓', '😔', '😕', '😲', '😷', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😬', '😰', '😱', '😳', '😵', '😡', '😠'];
         const userEmoji = emojis[Math.floor(Math.random() * emojis.length)];
@@ -72,10 +72,10 @@
             }
         });
 
-        function setdefault_uid(user_id){
+        function setdefault_uid(user_id) {
             let uid = localStorage.getItem("uid");
-            if (uid === null){
-                uid = user_id+"#"+Math.random().toString().slice(2,8);
+            if (uid === null) {
+                uid = user_id + "#" + Math.random().toString().slice(2, 8);
                 localStorage.setItem("uid", uid)
             }
             return uid;
@@ -85,7 +85,7 @@
             // 加载消息
             const response = await (await fetch(`http://${apiHost}/mesage/query?room_id=${room_id}`)).json();
             console.log("load", response)
-            response.data.forEach(({ msg, uid }) => {displayMessage(msg, uid);})
+            response.data.forEach(({ msg, uid }) => { displayMessage(msg, uid); })
         }
 
         function sendMessage() {
