@@ -1,0 +1,26 @@
+version: "3"
+services:
+  emoji-chat:
+    build: ./
+    image: emoji-chat:0.0.1
+    container_name: emoji-chat
+
+    ports:
+      - "8000:8000"
+
+    networks:
+      - emoji-network
+
+  redis:
+    image: redis:6.2.6
+    container_name: redis6.2.6
+    command: redis-server
+    environment:
+      - TZ=Asia/Shanghai
+    restart: always
+    networks:
+      - emoji-network
+
+networks:
+  emoji-network:
+    driver: bridge

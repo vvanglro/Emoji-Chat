@@ -1,153 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emoji Chat</title>
+    <title>New Chat</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <style>
-        .message-content-container {
-            margin-top: 15px;
-            position: relative;
-            padding: 15px;
-        }
-        .user-message {
-            display: flex;
-            align-items: center;
-        }
-        .response-content {
-            margin-top: 5px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f0f0f0;
-        }
-        .message-content-container:hover {
-            cursor: pointer;
-        }
-    </style>
 </head>
+
 <body>
-<div class="container">
-    <h1 class="mt-5 text-center">Welcome to the Emoji Chat!</h1>
-    <div id="chat" class="card mt-3">
-        <div id="messages" class="card-body overflow-auto" style="height: 60vh;">
-        </div>
-        <div class="card-footer">
-            <p class="text-muted text-center">Click on the message to view the decryption</p> <!-- 添加提示信息 -->
-            <div class="d-flex">
-                <label for="messageText"></label><input id="messageText" type="text" class="form-control me-2" placeholder="Type your message here..." maxlength="20">
-                <button class="btn btn-primary" onclick="sendMessage()">Send</button>
-            </div>
-        </div>
+    <div class="container text-center mt-5">
+        <h1>Welcome to the Chat UI!</h1>
+        <button class="btn btn-primary mt-3" onclick="startNewChat()">New Chat</button>
     </div>
-</div>
-<script>
-    const apiHost = "0.0.0.0:8000";
-    const ws = new WebSocket(`ws://${apiHost}/ws`);
-    const emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '😇', '😐', '😑', '😶', '😏', '😣', '😥', '😮', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '😒', '😓', '😔', '😕', '😲', '😷', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😬', '😰', '😱', '😳', '😵', '😡', '😠'];
-    const userEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const responseCache = {}; // 缓存API响应
-    let canSendMessage = true; // 控制是否可以发送消息的标志
 
-    ws.onmessage = function(event) {
-        const [emoji, message] = event.data.split(':');
-        displayMessage(message, 'left', emoji);
-    };
+    <script>
+        async function startNewChat() {
+            // 生成 UUID
+            const room_id = generateUUID();
+            const apiHost = "0.0.0.0:8000";  // 替换为你的后端API地址
 
-    document.getElementById("messageText").addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            sendMessage();
-        }
-    });
+            try {
+                const response = await fetch(`http://${apiHost}/api/newchat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ room_id: room_id })
+                });
 
-    function sendMessage() {
-        if (!canSendMessage) {
-            alert("You can only send one message every three seconds.");
-            return;
-        }
-
-        const input = document.getElementById("messageText");
-        const message = input.value;
-        if (message.trim() !== "") {
-            displayMessage(message, 'right', userEmoji);
-            ws.send(`${userEmoji}:${message}`);
-            input.value = '';
-            canSendMessage = false; // 设置不能发送消息
-            setTimeout(() => canSendMessage = true, 3000); // 3秒后重新允许发送消息
-        }
-    }
-
-    async function fetchApiResponse(message) {
-        if (responseCache[message]) {
-            return responseCache[message]; // 返回缓存的响应
+                if (response.ok) {
+                    window.location.href = `/chat?room_id=${room_id}`;
+                } else {
+                    console.error('Error:', response.statusText);
+                    alert('Failed to start a new chat session. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+            }
         }
 
-        const response = await fetch(`http://${apiHost}/api/decrypt`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ message: message })
-        });
-        const data = await response.json();
-        responseCache[message] = data.response; // 缓存响应
-        return data.response;
-    }
-
-    async function handleApiMessageClick(event) {
-        const messageElement = event.currentTarget;
-        const messageText = messageElement.querySelector('.text-content').textContent;
-
-        if (messageElement.querySelector('.response-content')) {
-            messageElement.querySelector('.response-content').remove();
-        } else {
-            const responseContent = await fetchApiResponse(messageText);
-
-            const responseDiv = document.createElement('div');
-            responseDiv.classList.add('response-content');
-            responseDiv.textContent = responseContent;
-
-            messageElement.appendChild(responseDiv);
+        // 简单的UUID生成器
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
         }
-    }
-
-    function displayMessage(message, position, avatar) {
-        const messages = document.getElementById('messages');
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('d-flex', 'align-items-start', 'mb-3', 'user-message');
-
-        const avatarDiv = document.createElement('div');
-        avatarDiv.textContent = avatar;
-        avatarDiv.classList.add('avatar');
-        avatarDiv.style.fontSize = '50px';
-        avatarDiv.style.lineHeight = '50px';
-        avatarDiv.style.marginRight = '10px';
-
-        const messageContent = document.createElement('div');
-        messageContent.classList.add('message-content-container', 'p-2', 'border', 'rounded');
-
-        if (position === 'right') {
-            messageDiv.classList.add('flex-row-reverse');
-            messageContent.classList.add('bg-primary');
-            messageContent.classList.add('text-white');
-        } else {
-            messageContent.classList.add('bg-light');
-            messageContent.onclick = handleApiMessageClick; // 添加点击事件
-        }
-
-        const textContent = document.createElement('div');
-        textContent.classList.add('text-content');
-        textContent.textContent = message;
-
-        messageContent.appendChild(textContent);
-        messageContent.style.position = 'relative';
-
-        messageDiv.appendChild(avatarDiv);
-        messageDiv.appendChild(messageContent);
-        messages.appendChild(messageDiv);
-        messages.scrollTop = messages.scrollHeight;
-    }
-</script>
+    </script>
 </body>
+
 </html>
