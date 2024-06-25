@@ -53,13 +53,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     const room_id = urlParams.get('room_id');
     console.log(">>> room_id: ", room_id);
-    const apiHost = "0.0.0.0:8000";  // 替换为你的后端API地址
+    const apiHost = window.location.host;  // 替换为你的后端API地址
 
 
     const emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '😇', '😐', '😑', '😶', '😏', '😣', '😥', '😮', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '😒', '😓', '😔', '😕', '😲', '😷', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😬', '😰', '😱', '😳', '😵', '😡', '😠'];
     const userEmoji = emojis[Math.floor(Math.random() * emojis.length)];
     const uid = setdefault_uid(userEmoji.codePointAt());
-    const ws = new WebSocket(`ws://${apiHost}/ws/${room_id}/${uid.split("#")[1]}`);
+    const ws = new WebSocket(`/ws/${room_id}/${uid.split("#")[1]}`);
     const responseCache = {}; // 缓存API响应
     let canSendMessage = true; // 控制是否可以发送消息的标志
 
@@ -93,7 +93,7 @@
 
     async function loadMessage() {
         // 加载消息
-        const response = await (await fetch(`http://${apiHost}/mesage/query?room_id=${room_id}`)).json();
+        const response = await (await fetch(`/mesage/query?room_id=${room_id}`)).json();
         console.log("load", response)
         response.data.forEach(({ msg, uid }) => {displayMessage(msg, uid, true);})
     }
@@ -125,7 +125,7 @@
             return responseCache[message];
         }
 
-        const response = await fetch(`http://${apiHost}/api/decrypt`, {
+        const response = await fetch(`/api/decrypt`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

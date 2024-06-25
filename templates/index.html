@@ -18,10 +18,10 @@
         async function startNewChat() {
             // 生成 UUID
             const room_id = generateUUID();
-            const apiHost = "0.0.0.0:8000";  // 替换为你的后端API地址
+            const apiHost = window.location.host;  // 替换为你的后端API地址
 
             try {
-                const response = await fetch(`http://${apiHost}/api/newchat`, {
+                const response = await fetch(`/api/newchat`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
