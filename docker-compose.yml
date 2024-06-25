@@ -1,22 +1,21 @@
-version: "3"
 services:
   emoji-chat:
-    build: ./
-    image: emoji-chat:0.0.1
-    container_name: emoji-chat
+    build: .
 
     ports:
-      - "8000:8000"
+      - '8000:8000'
+
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 3
 
     networks:
       - emoji-network
 
   redis:
-    image: redis:6.2.6
-    container_name: redis6.2.6
-    command: redis-server
+    image: 'bitnami/redis'
     environment:
-      - TZ=Asia/Shanghai
+      REDIS_PASSWORD:
+    ports:
+      - '6379:6379'
     restart: always
     networks:
       - emoji-network

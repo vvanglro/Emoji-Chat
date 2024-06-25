@@ -17,7 +17,14 @@ class Message:
     ts: int | None = None
 
     def to_json(self):
+        if self.ts is None:
+            self.ts = int(time.time())
         return json.dumps(dataclasses.asdict(self), ensure_ascii=False)
+
+    def to_dict(self):
+        if self.ts is None:
+            self.ts = int(time.time())
+        return dataclasses.asdict(self)
 
 
 class RedisServer:
@@ -38,41 +45,30 @@ class RedisServer:
         self._pool = None
 
     async def connect(self):
-        pool = ConnectionPool.from_url(url=settings.REDIS_URL)
+        pool = ConnectionPool.from_url(url=settings.REDIS_URL, decode_responses=True)
         self._pool = redis.Redis(connection_pool=pool)
         await self._pool.ping()
 
-    async def into_room(self, room_id, user_id):
+    async def into_room(self, room_id):
         # 用户进入房间
-        if (
-            len(await self.pool.hgetall(self.room_key + room_id)) + 1
-            > settings.ROOM_MAX_ONLINE
-        ):
+        if (num := await self.pool.get(self.room_key + room_id)) and int(num) >= settings.ROOM_MAX_ONLINE:
             return False
-        else:
-            await self.pool.hset(self.room_key + room_id, user_id, "1")
-            return True
+        await self.pool.incr(self.room_key + room_id)
+        return True
 
-    async def leave_room(self, room_id, user_id):
+    async def leave_room(self, room_id):
         # 用户离开房间
-        await self.pool.hdel(self.room_key + room_id, user_id)
-        if len(await self.pool.hgetall(self.room_key + room_id)) == 0:
-            await self.pool.delete(self.room_key + "msgs:" + room_id)
-
-    async def get_users(self, room_id: str) -> dict:
-        # 查询房间中全部用户
-        return await self.pool.hgetall(self.room_key + room_id)
+        if await self.pool.decr(self.room_key + room_id) == 0:
+            await self.pool.delete(self.room_key + room_id)
+            await self.pool.delete(room_id)
 
     async def get_message(self, room_id: str):
         # 查询房间中的历史消息
-        message_list = await self.pool.lrange(self.room_key + "msgs:" + room_id, 0, -1)
-        return [json.loads(msg) for msg in message_list]
+        message_list = await self.pool.xrange(room_id, "-", "+", 30)
+        return [msg for _id, msg in message_list]
 
     async def new_message(self, room_id, message: Message):
-        if message.ts is None:
-            message.ts = int(time.time())
-
-        await self.pool.rpush(self.room_key + "msgs:" + room_id, message.to_json())
+        await self.pool.xadd(room_id, fields=message.to_dict())
 
 
 RedisServerObj = RedisServer()

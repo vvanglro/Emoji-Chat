@@ -2,11 +2,3 @@
 .venv
 .gitignore
 .dockerignore
-README.md
-LICENSE
-
-pdm.lock
-pdm.*
-pyproject.toml
-
-tests

@@ -10,6 +10,7 @@ dependencies = [
     "obscure64>=0.1.0",
     "redis>=5.0.6",
     "pydantic-settings>=2.3.3",
+    "uvicorn[standard]>=0.30.1",
 ]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
@@ -23,3 +24,6 @@ distribution = false
 dev = [
     "pre-commit>=3.7.1",
 ]
+
+[tool.ruff]
+line-length = 130
