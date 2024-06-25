@@ -21,7 +21,7 @@ Emoji-Chat is a simple chat application that allows users to send messages as em
     ```
 
 ## TODO
-- [ ] Message storage, history messages
-- [ ] Multiple Chat Rooms
+- [x] Message storage, history messages
+- [x] Multiple Chat Rooms
 - [ ] Beautiful web page
 - [ ] Message styles, e.g. return messages with only character emoji or animal emoji, etc.
