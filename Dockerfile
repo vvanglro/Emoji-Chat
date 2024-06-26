@@ -25,6 +25,6 @@ RUN chmod -R 777 /etc/lib/redis
 
 COPY redis.conf /etc/redis/redis.conf
 
-ENTRYPOINT ["redis-server", "/etc/redis/redis.conf", "--daemonize yes"]
+ENTRYPOINT ["redis-server", "/etc/redis/redis.conf", "--daemonize", "yes"]
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "3"]
