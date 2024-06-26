@@ -1,7 +1,7 @@
 FROM ubuntu:20.04 AS builder
 
-# Install Python and PDM
-RUN apt-get update && apt-get install -y python3-pip python3-venv
+# Install Python, PDM, and build dependencies
+RUN apt-get update && apt-get install -y python3-pip python3-venv build-essential clang cargo libssl-dev
 RUN pip3 install -U pdm
 
 ENV PDM_CHECK_UPDATE=false
