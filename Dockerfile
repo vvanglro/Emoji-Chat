@@ -1,8 +1,8 @@
-ARG PYTHON_BASE=python:3.11-slim
+FROM ubuntu:20.04 AS builder
 
-FROM  $PYTHON_BASE AS builder
-
-RUN pip install -U pdm
+# Install Python and PDM
+RUN apt-get update && apt-get install -y python3-pip python3-venv
+RUN pip3 install -U pdm
 
 ENV PDM_CHECK_UPDATE=false
 
@@ -11,22 +11,29 @@ COPY pyproject.toml pdm.lock README.md /project/
 WORKDIR /project
 RUN pdm install --check --prod --no-editable
 
-FROM $PYTHON_BASE AS final
+FROM ubuntu:20.04
 
+# Copy the virtual environment from the builder stage
 COPY --from=builder /project/.venv/ /project/.venv
 ENV PATH="/project/.venv/bin:$PATH"
 
+# Install Redis and other dependencies
 RUN apt-get update && apt-get install -y redis-server libatomic1 && apt-get clean
 
+# Ensure redis.conf has the correct permissions and ownership
+COPY redis.conf /etc/redis/redis.conf
+RUN chown root:root /etc/redis/redis.conf && chmod 644 /etc/redis/redis.conf
+
+# Prepare the workspace
 RUN mkdir /workspace/
 WORKDIR /workspace/
 COPY . /workspace/
 
+# Ensure redis server can run properly
 RUN mkdir -p /etc/lib/redis
 RUN chmod -R 777 /etc/lib/redis
 
-COPY redis.conf /etc/redis/redis.conf
+# Debugging step: Verify permissions
+RUN ls -l /etc/redis/
 
-RUN chown root:root /etc/redis/redis.conf && chmod 644 /etc/redis/redis.conf
-
-CMD ["sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
+CMD ["sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && /project/.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
