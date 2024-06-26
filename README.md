@@ -1,3 +1,13 @@
+---
+title: Emoji Chat
+emoji: 🏆
+colorFrom: yellow
+colorTo: indigo
+sdk: docker
+pinned: false
+license: mit
+---
+
 # Emoji-Chat
 
 Emoji-Chat is a simple chat application that allows users to send messages as emoji.
