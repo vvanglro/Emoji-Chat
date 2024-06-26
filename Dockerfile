@@ -1,24 +1,3 @@
-FROM ubuntu:20.04 AS builder
-
-# Install Python, PDM, and build dependencies
-RUN apt-get update && apt-get install -y python3-pip python3-venv build-essential clang libssl-dev curl
-
-# Install the latest version of Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:$PATH"
-
-# Ensure Rust is updated to the latest version
-RUN rustup update
-
-RUN pip3 install -U pdm
-
-ENV PDM_CHECK_UPDATE=false
-
-COPY pyproject.toml pdm.lock README.md /project/
-
-WORKDIR /project
-RUN pdm install --check --prod --no-editable
-
 FROM ubuntu:20.04
 
 # Install Redis and other dependencies
@@ -44,7 +23,7 @@ RUN chmod -R 777 /etc/lib/redis
 # Ensure correct permissions for the virtual environment
 RUN chmod -R 755 /opt/venv
 
-# Debugging step: Verify permissions
-RUN ls -l /etc/redis/ && ls -l /opt/venv/bin/
+# Debugging step: Verify permissions and user ID
+RUN ls -l /etc/redis/ && ls -l /opt/venv/bin/ && id
 
 CMD ["sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && /opt/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
