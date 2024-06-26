@@ -25,4 +25,4 @@ RUN chmod -R 777 /etc/lib/redis
 
 COPY redis.conf /etc/redis/redis.conf
 
-CMD ["sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
+CMD ["/bin/sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && /project/.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
