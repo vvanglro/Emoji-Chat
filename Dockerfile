@@ -1,6 +1,4 @@
-ARG PYTHON_BASE=python:3.11-slim
-
-FROM  $PYTHON_BASE AS builder
+FROM  python:3.11-slim AS builder
 
 RUN pip install -U pdm
 
@@ -11,7 +9,7 @@ COPY pyproject.toml pdm.lock README.md /project/
 WORKDIR /project
 RUN pdm install --check --prod --no-editable
 
-FROM $PYTHON_BASE AS final
+FROM ubuntu:20.04
 
 COPY --from=builder /project/.venv/ /project/.venv
 ENV PATH="/project/.venv/bin:$PATH"
