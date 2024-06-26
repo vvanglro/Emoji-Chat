@@ -27,4 +27,4 @@ ENV TZ=Asia/Shanghai
 RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && \
     echo $TZ > /etc/timezone
 
-CMD ["sh", "-c", "redis-server --daemonize yes && uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
+CMD ["sh", "-c", "redis-server --save '' --appendonly no --daemonize yes && uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
