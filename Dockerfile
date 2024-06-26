@@ -9,7 +9,7 @@ COPY pyproject.toml pdm.lock README.md /project/
 WORKDIR /project
 RUN pdm install --check --prod --no-editable
 
-FROM ubuntu:20.04
+FROM python:3.11-slim
 
 COPY --from=builder /project/.venv/ /project/.venv
 ENV PATH="/project/.venv/bin:$PATH"
@@ -25,10 +25,4 @@ RUN mkdir /workspace/
 WORKDIR /workspace/
 COPY . /workspace/
 
-# Ensure the PATH is correctly set
-RUN echo $PATH
-
-# List the contents of the virtual environment to verify it exists
-RUN ls /project/.venv/bin
-
-CMD ["/bin/sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && /project/.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
+CMD ["sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
