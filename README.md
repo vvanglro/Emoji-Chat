@@ -30,6 +30,16 @@ Emoji-Chat is a simple chat application that allows users to send messages as em
     python main.py
     ```
 
+## Deploy Emoji-Chat on Spaces
+
+You can deploy Emoji-Chat on Spaces with just a few clicks:
+
+[![Duplicate this Space](https://github.com/vvanglro/Emoji-Chat/assets/43594924/af8af838-72c7-429e-bb75-dc161f8c7b0d)](https://huggingface.co/spaces/vvanglro/emoji-chat?duplicate=true)
+
+Try Now:
+
+https://vvanglro-emoji-chat.hf.space/
+
 ## TODO
 - [x] Message storage, history messages
 - [x] Multiple Chat Rooms
