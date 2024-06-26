@@ -29,8 +29,8 @@ Emoji-Chat is a simple chat application that allows users to send messages as em
     ```shell
     python main.py
     ```
-    
-## Click to deploy 
+
+## Click to deploy
 [![Deploy with HuggingFace](https://huggingface.co/front/assets/huggingface_logo.svg)](https://huggingface.co/spaces/vvanglro/emoji-chat?duplicate=true)
 
 
