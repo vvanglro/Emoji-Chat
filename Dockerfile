@@ -1,7 +1,15 @@
 FROM ubuntu:20.04 AS builder
 
 # Install Python, PDM, and build dependencies
-RUN apt-get update && apt-get install -y python3-pip python3-venv build-essential clang cargo libssl-dev
+RUN apt-get update && apt-get install -y python3-pip python3-venv build-essential clang libssl-dev curl
+
+# Install the latest version of Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Ensure Rust is updated to the latest version
+RUN rustup update
+
 RUN pip3 install -U pdm
 
 ENV PDM_CHECK_UPDATE=false
