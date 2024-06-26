@@ -32,16 +32,3 @@ def get_emoji_data():
 
 
 data = get_emoji_data()
-# print(data)
-# print(type(data))
-
-print(random_select_unique_characters(data.get("1"), 65))
-from obscure64 import Obscure64
-
-ob64 = Obscure64(
-    b64chars="🙈🙉🙊🐒🐶🐕🐩🐺🐱😹😻😼🙀😿🐈🐯🐅🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐑🐐🐪🐘🐭🐀🐹"
-    "🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋"
-)
-
-print(ob64._encode_map)
-print(ob64._decode_map)
