@@ -1,4 +1,4 @@
-FROM  python:3.11-slim AS builder
+FROM python:3.11-slim AS builder
 
 RUN pip install -U pdm
 
@@ -16,13 +16,19 @@ ENV PATH="/project/.venv/bin:$PATH"
 
 RUN apt-get update && apt-get install -y redis-server libatomic1 && apt-get clean
 
-RUN mkdir /workspace/
-WORKDIR /workspace/
-COPY . /workspace/
-
 RUN mkdir -p /etc/lib/redis
 RUN chmod -R 777 /etc/lib/redis
 
 COPY redis.conf /etc/redis/redis.conf
+
+RUN mkdir /workspace/
+WORKDIR /workspace/
+COPY . /workspace/
+
+# Ensure the PATH is correctly set
+RUN echo $PATH
+
+# List the contents of the virtual environment to verify it exists
+RUN ls /project/.venv/bin
 
 CMD ["/bin/sh", "-c", "redis-server /etc/redis/redis.conf --daemonize yes && /project/.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 7860 --workers 3"]
