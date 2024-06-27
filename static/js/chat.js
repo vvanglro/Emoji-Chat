@@ -3,7 +3,6 @@ const room_id = urlParams.get('room_id');
 console.log(">>> room_id: ", room_id);
 const apiHost = window.location.host;  // 替换为你的后端API地址
 
-
 const emojis = ['😀', '😁', '😂', '😃', '😄', '😅', '😆', '😉', '😊', '😋', '😎', '😍', '😘', '😗', '😙', '😚', '😇', '😐', '😑', '😶', '😏', '😣', '😥', '😮', '😯', '😪', '😫', '😴', '😌', '😛', '😜', '😝', '😒', '😓', '😔', '😕', '😲', '😷', '😖', '😞', '😟', '😤', '😢', '😭', '😦', '😧', '😨', '😬', '😰', '😱', '😳', '😵', '😡', '😠'];
 const userEmoji = emojis[Math.floor(Math.random() * emojis.length)];
 const uid = setdefault_uid(userEmoji.codePointAt());
@@ -17,7 +16,7 @@ ws.onmessage = function (event) {
     if (data.code || data.code === 10401) {
         alert(data.msg);
     }
-    displayMessage(data.msg, data.uid);
+    displayMessage(data.emoji_msg, data.uid, false, data.msg);
 };
 
 document.getElementById("messageText").addEventListener("keypress", function (event) {
@@ -47,7 +46,7 @@ async function loadMessage() {
     // 加载消息
     const response = await (await fetch(`/mesage/query?room_id=${room_id}`)).json();
     console.log("load", response)
-    response.data.forEach(({ msg, uid }) => {displayMessage(msg, uid, true);})
+    response.data.forEach(({ emoji_msg, uid, msg }) => {displayMessage(emoji_msg, uid, true, msg);})
 }
 
 function sendMessage() {
@@ -68,25 +67,8 @@ function sendMessage() {
         ws.send(JSON.stringify(msg));
         input.value = '';
         canSendMessage = false;
-        setTimeout(() => canSendMessage = true, 3000);
+        setTimeout(() => canSendMessage = true, 2000);
     }
-}
-
-async function fetchApiResponse(message) {
-    if (responseCache[message]) {
-        return responseCache[message];
-    }
-
-    const response = await fetch(`/api/decrypt`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message: message })
-    });
-    const data = await response.json();
-    responseCache[message] = data.response;
-    return data.response;
 }
 
 async function handleApiMessageClick(event) {
@@ -96,7 +78,7 @@ async function handleApiMessageClick(event) {
     if (messageElement.querySelector('.response-content')) {
         messageElement.querySelector('.response-content').remove();
     } else {
-        const responseContent = await fetchApiResponse(messageText);
+        const responseContent = messageElement.getAttribute('data-response-msg');
 
         const responseDiv = document.createElement('div');
         responseDiv.classList.add('response-content');
@@ -106,7 +88,7 @@ async function handleApiMessageClick(event) {
     }
 }
 
-function displayMessage(message, from_uid, load = false) {
+function displayMessage(message, from_uid, load = false, responseMsg = null) {
     const messages = document.getElementById('messages');
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('d-flex', 'align-items-start', 'mb-3', 'user-message');
@@ -127,10 +109,13 @@ function displayMessage(message, from_uid, load = false) {
 <!--            messageContent.classList.add('text-white');-->
         if (load) {
             messageContent.classList.add('bg-light');
-            messageContent.onclick = handleApiMessageClick; // 添加点击事件
         }
     } else {
         messageContent.classList.add('bg-light');
+    }
+
+    if (responseMsg) {
+        messageContent.setAttribute('data-response-msg', responseMsg);
         messageContent.onclick = handleApiMessageClick; // 添加点击事件
     }
 

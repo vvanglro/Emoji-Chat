@@ -13,6 +13,7 @@ from emoji_chat.config import settings
 class Message:
     uid: str
     msg: str
+    emoji_msg: str
     room_id: str
     ts: int | None = None
 

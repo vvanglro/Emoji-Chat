@@ -1,3 +1,4 @@
+from __future__ import annotations
 import functools
 import json
 import random
@@ -13,22 +14,30 @@ class EmojiCategory(IntEnum):
     ACTIVITIES = 6  # 活动
     OBJECTS = 7  # 物品
     SYMBOLS = 8  # 符号
-    FLAGS = 9  # 旗帜
 
 
-def random_select_unique_characters(input_string, num_characters):
-    if len(input_string) < num_characters:
+def random_select_unique_characters(emoji_list: list, num_characters: int) -> str:
+    if len(emoji_list) < num_characters:
         raise ValueError("Input string must contain at least {} unique characters".format(num_characters))
 
-    selected_chars = random.sample(input_string, num_characters)
-
-    return "".join(selected_chars)
+    selected_chars = random.sample(emoji_list, num_characters)
+    processed_chars = [char.encode().decode("unicode_escape") for char in selected_chars]
+    return "".join(processed_chars)
 
 
 @functools.lru_cache()
-def get_emoji_data():
-    with open("emoji.json", "r") as f:
+def get_emoji_data() -> dict:
+    with open("emoji_chat/emoji.json", "r") as f:
         return json.loads(f.read())
 
 
-data = get_emoji_data()
+def get_emoji(emoji_category: EmojiCategory | None = None) -> str:
+    emoji_data = get_emoji_data()
+    if not emoji_category:
+        category = random.choice(list(EmojiCategory))
+    else:
+        category = emoji_category.value  # type: ignore[assignment]
+    emoji_list = emoji_data.get(str(category))
+    if not emoji_list:
+        raise ValueError("Emoji category not found")
+    return random_select_unique_characters(emoji_list, 65)

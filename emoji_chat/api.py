@@ -4,7 +4,7 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Body
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
@@ -14,6 +14,7 @@ from obscure64 import Obscure64
 from starlette.websockets import WebSocketState
 
 from emoji_chat.db import RedisServerObj, Message
+from emoji_chat.emoji import get_emoji
 
 
 @asynccontextmanager
@@ -33,10 +34,6 @@ app.add_middleware(
 )
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")  # Serve static files
-ob64 = Obscure64(
-    b64chars="🙈🙉🙊🐒🐶🐕🐩🐺🐱😹😻😼🙀😿🐈🐯🐅🐴🐎🐮🐂🐃🐄🐷🐖🐗🐽🐑🐐🐪🐘🐭🐀🐹"
-    "🐰🐇🐻🐨🐼🐾🐔🐓🐣🐤🐥🐧🐸🐊🐢🐍🐲🐉🐳🐋🐬🐠🐡🐙🐚🐌🐛🐜🐝🐞🦋"
-)
 
 
 class ConnectionManager:
@@ -80,13 +77,6 @@ async def get_message(room_id: str):
     return {"data": await RedisServerObj.get_message(room_id)}
 
 
-@app.post("/api/decrypt")
-async def decrypt_message(
-    body=Body(...),
-):
-    return {"response": ob64.decode(body.get("message")).decode("utf-8")}
-
-
 @app.websocket("/ws/{room_id}/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
     if not await manager.connect(room_id, websocket):
@@ -110,11 +100,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
         while True:
             data = await websocket.receive_json()
             try:
-                data["msg"] = ob64.encode(data["msg"].encode("utf-8")).decode("utf-8")
+                data["emoji_msg"] = Obscure64(b64chars=get_emoji()).encode(data["msg"].encode("utf-8")).decode("utf-8")
                 msg = Message(**data)
                 await RedisServerObj.new_message(room_id, msg)
             except Exception as e:
-                raise ValueError("Message 数据错误: " + str(e))
+                logging.error("消息处理错误: " + str(e), exc_info=True)
 
     except WebSocketDisconnect:
         await manager.disconnect(room_id, websocket)
