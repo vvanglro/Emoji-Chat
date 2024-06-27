@@ -47,3 +47,5 @@ https://vvanglro-emoji-chat.hf.space/
 - [ ] Message styles, e.g. return messages with only character emoji or animal emoji, etc.
 - [ ] Share chat room link
 - [ ] Chat Room Headcount
+- [ ] Whether to display the original text
+- [ ] Whether or not to obfuscate what you've sent
