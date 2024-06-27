@@ -51,7 +51,7 @@ async function loadMessage() {
 
 function sendMessage() {
     if (!canSendMessage) {
-        alert("You can only send one message every three seconds.");
+        alert("You can only send one message every one seconds.");
         return;
     }
 
@@ -67,7 +67,7 @@ function sendMessage() {
         ws.send(JSON.stringify(msg));
         input.value = '';
         canSendMessage = false;
-        setTimeout(() => canSendMessage = true, 2000);
+        setTimeout(() => canSendMessage = true, 1000);
     }
 }
 
