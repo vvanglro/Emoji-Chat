@@ -2,6 +2,7 @@ from __future__ import annotations
 import dataclasses
 import time
 import json
+import asyncio
 import redis.asyncio as redis
 from redis.asyncio.client import Redis
 from redis.asyncio.connection import ConnectionPool
@@ -52,7 +53,9 @@ class RedisServer:
 
     async def into_room(self, room_id):
         # 用户进入房间
-        if (num := await self.pool.get(self.room_key + room_id)) and int(num) >= settings.ROOM_MAX_ONLINE:
+        if (num := await self.count_room_members(room_id)) and int(
+            num
+        ) >= settings.ROOM_MAX_ONLINE:
             return False
         await self.pool.incr(self.room_key + room_id)
         return True
@@ -67,6 +70,24 @@ class RedisServer:
         # 查询房间中的历史消息
         message_list = await self.pool.xrange(room_id, "-", "+", 30)
         return [msg for _id, msg in message_list]
+
+    async def count_room_members(self, room_id: str):
+        # 统计房间在线人数
+        return await self.pool.get(self.room_key + room_id)
+
+    async def get_room_list(self):
+        # 获取所有房间
+        room_id_list = [
+            room.removeprefix(self.room_key)
+            for room in await self.pool.keys(self.room_key + "*")
+        ]
+        count_result = await asyncio.gather(
+            *[self.count_room_members(room_id) for room_id in room_id_list]
+        )
+        return [
+            {"room_id": room_id, "member_count": count}
+            for room_id, count in zip(room_id_list, count_result)
+        ]
 
     async def new_message(self, room_id, message: Message):
         await self.pool.xadd(room_id, fields=message.to_dict())
