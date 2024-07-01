@@ -33,9 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 templates = Jinja2Templates(directory="templates")
-app.mount(
-    "/static", StaticFiles(directory="static"), name="static"
-)  # Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")  # Serve static files
 
 
 class ConnectionManager:
@@ -76,9 +74,7 @@ async def get_roompage(request: Request):
 
 @app.get("/chat")
 async def get_chat_page(request: Request, room_id: str):
-    return templates.TemplateResponse(
-        "chat.html", {"request": request, "room_id": room_id}
-    )
+    return templates.TemplateResponse("chat.html", {"request": request, "room_id": room_id})
 
 
 @app.get("/mesage/query")
@@ -103,9 +99,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
                 if response:
                     for stream, messages in response:
                         for message_id, message_data in messages:
-                            if (uid := message_data.get("uid")) and uid.split("#")[
-                                1
-                            ] == user_id:
+                            if (uid := message_data.get("uid")) and uid.split("#")[1] == user_id:
                                 continue
                             await websocket.send_json(message_data)
             except Exception as e:
@@ -116,11 +110,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
         while True:
             data = await websocket.receive_json()
             try:
-                data["emoji_msg"] = (
-                    Obscure64(b64chars=get_emoji())
-                    .encode(data["msg"].encode("utf-8"))
-                    .decode("utf-8")
-                )
+                data["emoji_msg"] = Obscure64(b64chars=get_emoji()).encode(data["msg"].encode("utf-8")).decode("utf-8")
                 msg = Message(**data)
                 await RedisServerObj.new_message(room_id, msg)
             except Exception as e:
