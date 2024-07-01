@@ -67,6 +67,11 @@ async def get_homepage(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
+@app.get("/room")
+async def get_roompage(request: Request):
+    return templates.TemplateResponse(request=request, name="room.html")
+
+
 @app.get("/chat")
 async def get_chat_page(request: Request, room_id: str):
     return templates.TemplateResponse("chat.html", {"request": request, "room_id": room_id})
@@ -75,6 +80,11 @@ async def get_chat_page(request: Request, room_id: str):
 @app.get("/mesage/query")
 async def get_message(room_id: str):
     return {"data": await RedisServerObj.get_message(room_id)}
+
+
+@app.get("/room/query")
+async def get_room_list():
+    return {"data": await RedisServerObj.get_room_list()}
 
 
 @app.websocket("/ws/{room_id}/{user_id}")

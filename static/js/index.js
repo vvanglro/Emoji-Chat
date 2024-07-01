@@ -1,7 +1,6 @@
 async function startNewChat() {
     // 生成 UUID
     const room_id = generateUUID();
-    const apiHost = window.location.host;  // 替换为你的后端API地址
 
     try {
         const response = await fetch(`/api/newchat`, {
@@ -26,7 +25,7 @@ async function startNewChat() {
 
 // 简单的UUID生成器
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
