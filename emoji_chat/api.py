@@ -69,6 +69,11 @@ async def get_homepage(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
+@app.get("/room")
+async def get_homepage(request: Request):
+    return templates.TemplateResponse(request=request, name="room.html")
+
+
 @app.get("/chat")
 async def get_chat_page(request: Request, room_id: str):
     return templates.TemplateResponse(
