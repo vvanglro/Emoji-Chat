@@ -11,9 +11,21 @@
 <body class="d-flex align-items-center justify-content-center" style="height: 100vh;">
     <div class="container text-center">
         <h1>Welcome to the Emoji Chat!</h1>
+<<<<<<< HEAD
         <button class="btn btn-primary mt-5 me-5" onclick="startNewChat()">New Room Chat</button>
         <a class="btn btn-primary mt-5 ms-5" href="/room" target="_blank">Join Room
             Chat</a>
+=======
+        <div id="room_list" class="card">
+            <div class="card-header">
+                Room List
+            </div>
+            <ul class="list-group list-group-flush">
+            </ul>
+        </div>
+        <button class="btn btn-primary mt-5 me-5" onclick="startNewChat()">New Room Chat</button>
+        <button class="btn btn-primary mt-5 ms-5" onclick="joinRoomChat()">Join Room Chat</button>
+>>>>>>> d28f7fed6df84c8236b97a80410d853f38ba907c
     </div>
 
     <script src="/static/js/index.js"></script>
