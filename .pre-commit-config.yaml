@@ -24,11 +24,17 @@ repos:
         additional_dependencies:
           - types-redis
 
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.3.2
+    hooks:
+      - id: prettier
+        files: \.(js|css|html|markdown|md|yaml|yml)$
+
   - repo: local
     hooks:
       - id: python-no-print
         name: check for print()
-        description: 'A quick check for the `print()` built-in function'
+        description: "A quick check for the `print()` built-in function"
         entry: '\bprint\('
         language: pygrep
-        types: [ python ]
+        types: [python]

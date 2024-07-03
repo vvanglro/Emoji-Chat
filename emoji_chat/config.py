@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://127.0.0.1:6379"
 
-    ROOM_MAX_ONLINE: int = 30
+    GROUP_MAX_ONLINE: int = 30
 
 
 settings = Settings()
