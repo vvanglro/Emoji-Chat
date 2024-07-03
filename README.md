@@ -12,23 +12,24 @@ license: mit
 
 Emoji-Chat is a simple chat application that allows users to send messages as emoji.
 
-
 ## Features
+
 ![chat.png](chat.png)
 
 ## Usage
+
 1. Clone the repository:
-    ```shell
-    git@github.com:vvanglro/Emoji-Chat.git
-    ```
+   ```shell
+   git@github.com:vvanglro/Emoji-Chat.git
+   ```
 2. Install dependencies:
-    ```shell
-    pdm install
-    ```
+   ```shell
+   pdm install
+   ```
 3. Run the application:
-    ```shell
-    python main.py
-    ```
+   ```shell
+   python main.py
+   ```
 
 ## Deploy Emoji-Chat on Spaces
 
@@ -41,6 +42,7 @@ Try Now:
 https://vvanglro-emoji-chat.hf.space/
 
 ## TODO
+
 - [x] Message storage, history messages
 - [x] Multiple Chat Rooms
 - [ ] Beautiful web page

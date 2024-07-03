@@ -1,54 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Emoji Chat</title>
-    <link href="https://unpkg.com/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link
+      href="https://unpkg.com/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/css/styles.css" />
     <style>
-        .message-content-container {
-            margin-top: 15px;
-            position: relative;
-            padding: 15px;
-        }
+      .message-content-container {
+        margin-top: 15px;
+        position: relative;
+        padding: 15px;
+      }
 
-        .user-message {
-            display: flex;
-            align-items: center;
-        }
+      .user-message {
+        display: flex;
+        align-items: center;
+      }
 
-        .response-content {
-            margin-top: 5px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f0f0f0;
-        }
+      .response-content {
+        margin-top: 5px;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f0f0f0;
+      }
 
-        .message-content-container:hover {
-            cursor: pointer;
-        }
+      .message-content-container:hover {
+        cursor: pointer;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-<div class="container">
-    <h1 class="mt-5 text-center">Welcome to the Emoji Chat!</h1>
-    <div id="chat" class="card mt-3">
-        <div id="messages" class="card-body overflow-auto" style="height: 60vh;">
-        </div>
+  <body>
+    <div class="container">
+      <h1 class="mt-5 text-center">Welcome to the Emoji Chat!</h1>
+      <div id="chat" class="card mt-3">
+        <div
+          id="messages"
+          class="card-body overflow-auto"
+          style="height: 60vh"
+        ></div>
         <div class="card-footer">
-            <p class="text-muted text-center">Click on the message to view the decryption</p>
-            <div class="d-flex">
-                <label for="messageText"></label><input id="messageText" type="text" class="form-control me-2"
-                                                        placeholder="Type your message here..." maxlength="20">
-                <button class="btn btn-primary" onclick="sendMessage()">Send</button>
-            </div>
+          <p class="text-muted text-center">
+            Click on the message to view the decryption
+          </p>
+          <div class="d-flex">
+            <label for="messageText"></label
+            ><input
+              id="messageText"
+              type="text"
+              class="form-control me-2"
+              placeholder="Type your message here..."
+              maxlength="30"
+            />
+            <button class="btn btn-primary" onclick="sendMessage()">
+              Send
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-<script src="/static/js/chat.js"></script>
-</body>
-
+    <script src="/static/js/chat.js"></script>
+  </body>
 </html>

@@ -4,17 +4,17 @@ services:
       context: .
       dockerfile: Dockerfile.local
     ports:
-      - '8000:8000'
+      - "8000:8000"
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 3
     networks:
       - emoji-network
 
   redis:
-    image: 'bitnami/redis'
+    image: "bitnami/redis"
     environment:
       REDIS_PASSWORD:
     ports:
-      - '6379:6379'
+      - "6379:6379"
     restart: always
     networks:
       - emoji-network

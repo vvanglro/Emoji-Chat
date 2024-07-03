@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Room List</title>
+    <link
+      href="https://unpkg.com/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body style="margin-top: 50px">
+    <div class="container text-center">
+      <h1>Emoji Group Chat List!</h1>
+      <div style="margin-bottom: 20px"></div>
+      <div id="room_list" class="card">
+        <div class="card-header d-flex justify-content-between">
+          <div class="col">房间ID</div>
+          <div class="col">房间人数</div>
+          <div class="col">操作</div>
+        </div>
+        <ul class="list-group list-group-flush"></ul>
+      </div>
+    </div>
+
+    <script>
+      (async function () {
+        // 初始化房间列表
+        try {
+          const response = await (await fetch(`/group/query`)).json();
+          // 按照房间人数降序排列
+          show_room_list(
+            response.data.toSorted((a, b) =>
+              a.member_count - b.member_count > 0 ? -1 : 1,
+            ),
+          );
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Something went wrong. Please try again.");
+        }
+      })();
+    </script>
+
+    <script src="/static/js/group.js"></script>
+  </body>
+</html>

@@ -38,19 +38,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")  # Serve st
 
 class ConnectionManager:
     @classmethod
-    async def connect(cls, room_id, websocket: WebSocket):
+    async def connect(cls, group_id, websocket: WebSocket):
         await websocket.accept()
-        if not await RedisServerObj.into_room(room_id):
+        if not await RedisServerObj.into_group(group_id):
             await websocket.send_json({"code": 10401, "msg": "人数已满"})
             await websocket.close()
             return False
         return True
 
     @classmethod
-    async def disconnect(cls, room_id, websocket: WebSocket):
+    async def disconnect(cls, group_id, websocket: WebSocket):
         if websocket.client_state is not WebSocketState.DISCONNECTED:
             await websocket.close()
-        await RedisServerObj.leave_room(room_id)
+        await RedisServerObj.leave_group(group_id)
 
 
 manager = ConnectionManager()
@@ -58,8 +58,9 @@ manager = ConnectionManager()
 
 @app.post("/api/newchat")
 async def new_chat():
-    room_id = uuid.uuid4().hex
-    return {"room_id": room_id}
+    # 以后可以在这里进行房间的初始化信息
+    group_id = uuid.uuid4().hex
+    return {"group_id": group_id}
 
 
 @app.get("/")
@@ -67,35 +68,35 @@ async def get_homepage(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
-@app.get("/room")
-async def get_roompage(request: Request):
-    return templates.TemplateResponse(request=request, name="room.html")
+@app.get("/group/chat")
+async def get_group_page(request: Request):
+    return templates.TemplateResponse(request=request, name="group.html")
 
 
 @app.get("/chat")
-async def get_chat_page(request: Request, room_id: str):
-    return templates.TemplateResponse("chat.html", {"request": request, "room_id": room_id})
+async def get_chat_page(request: Request, group_id: uuid.UUID):
+    return templates.TemplateResponse("chat.html", {"request": request, "group_id": group_id})
 
 
 @app.get("/mesage/query")
-async def get_message(room_id: str):
-    return {"data": await RedisServerObj.get_message(room_id)}
+async def get_message(group_id: uuid.UUID):
+    return {"data": await RedisServerObj.get_message(group_id.hex)}
 
 
-@app.get("/room/query")
-async def get_room_list():
-    return {"data": await RedisServerObj.get_room_list()}
+@app.get("/group/query")
+async def get_group_list():
+    return {"data": await RedisServerObj.get_group_list()}
 
 
-@app.websocket("/ws/{room_id}/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
-    if not await manager.connect(room_id, websocket):
+@app.websocket("/ws/{group_id}/{user_id}")
+async def websocket_endpoint(websocket: WebSocket, group_id: str, user_id: str):
+    if not await manager.connect(group_id, websocket):
         return
 
     async def receive_messages():
         while True:
             try:
-                response = await RedisServerObj.pool.xread({room_id: "$"}, block=0)
+                response = await RedisServerObj.pool.xread({RedisServerObj.group_msgs_key + group_id: "$"}, block=0)
                 if response:
                     for stream, messages in response:
                         for message_id, message_data in messages:
@@ -112,10 +113,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, user_id: str):
             try:
                 data["emoji_msg"] = Obscure64(b64chars=get_emoji()).encode(data["msg"].encode("utf-8")).decode("utf-8")
                 msg = Message(**data)
-                await RedisServerObj.new_message(room_id, msg)
+                await RedisServerObj.new_message(group_id, msg)
             except Exception as e:
                 logging.error("消息处理错误: " + str(e), exc_info=True)
 
     except WebSocketDisconnect:
-        await manager.disconnect(room_id, websocket)
+        await manager.disconnect(group_id, websocket)
         receiver_task.cancel()

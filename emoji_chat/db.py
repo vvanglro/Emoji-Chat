@@ -2,7 +2,6 @@ from __future__ import annotations
 import dataclasses
 import time
 import json
-import asyncio
 import redis.asyncio as redis
 from redis.asyncio.client import Redis
 from redis.asyncio.connection import ConnectionPool
@@ -15,7 +14,7 @@ class Message:
     uid: str
     msg: str
     emoji_msg: str
-    room_id: str
+    group_id: str
     ts: int | None = None
 
     def to_json(self):
@@ -32,7 +31,9 @@ class Message:
 class RedisServer:
     def __init__(self):
         self._pool = None
-        self.room_key: str = "chat:room:"
+        self._group_key: str = "chat:group:"
+        self.group_msgs_key: str = f"{self._group_key}msg:"
+        self.group_people_num_key: str = f"{self._group_key}num:"
 
     @property
     def pool(self) -> Redis:
@@ -51,36 +52,40 @@ class RedisServer:
         self._pool = redis.Redis(connection_pool=pool)
         await self._pool.ping()
 
-    async def into_room(self, room_id):
+    async def into_group(self, group_id):
         # 用户进入房间
-        if (num := await self.count_room_members(room_id)) and int(num) >= settings.ROOM_MAX_ONLINE:
+        if (num := await self.count_group_members(group_id)) and int(num) >= settings.GROUP_MAX_ONLINE:
             return False
-        await self.pool.incr(self.room_key + room_id)
+        await self.pool.incr(self.group_people_num_key + group_id)
         return True
 
-    async def leave_room(self, room_id):
+    async def leave_group(self, group_id):
         # 用户离开房间
-        if await self.pool.decr(self.room_key + room_id) == 0:
-            await self.pool.delete(self.room_key + room_id)
-            await self.pool.delete(room_id)
+        if await self.pool.decr(self.group_people_num_key + group_id) == 0:
+            await self.pool.delete(self.group_people_num_key + group_id)
+            await self.pool.delete(self.group_msgs_key + group_id)
 
-    async def get_message(self, room_id: str):
+    async def get_message(self, group_id: str):
         # 查询房间中的历史消息
-        message_list = await self.pool.xrange(room_id, "-", "+", 30)
+        message_list = await self.pool.xrange(self.group_msgs_key + group_id, "-", "+", 30)
         return [msg for _id, msg in message_list]
 
-    async def count_room_members(self, room_id: str):
+    async def count_group_members(self, group_id: str):
         # 统计房间在线人数
-        return await self.pool.get(self.room_key + room_id)
+        return await self.pool.get(self.group_people_num_key + group_id)
 
-    async def get_room_list(self):
+    async def get_group_list(self):
         # 获取所有房间
-        room_id_list = [room.removeprefix(self.room_key) for room in await self.pool.keys(self.room_key + "*")]
-        count_result = await asyncio.gather(*[self.count_room_members(room_id) for room_id in room_id_list])
-        return [{"room_id": room_id, "member_count": count} for room_id, count in zip(room_id_list, count_result)]
+        async with self.pool.pipeline() as pipe:
+            await pipe.keys(self.group_people_num_key + "*")
+            group_keys = await pipe.execute()
+            group_id_list = [group_key.removeprefix(self.group_people_num_key) for group_key in group_keys[0]]
+            for group_id in group_keys[0]:
+                await pipe.get(group_id)
+            return [{"group_id": group_id, "member_count": count} for group_id, count in zip(group_id_list, await pipe.execute())]
 
-    async def new_message(self, room_id, message: Message):
-        await self.pool.xadd(room_id, fields=message.to_dict())
+    async def new_message(self, group_id, message: Message):
+        await self.pool.xadd(self.group_msgs_key + group_id, fields=message.to_dict())
 
 
 RedisServerObj = RedisServer()
