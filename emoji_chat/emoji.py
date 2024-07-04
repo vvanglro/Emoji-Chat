@@ -34,9 +34,9 @@ def get_emoji_data() -> dict:
 def get_emoji(emoji_category: EmojiCategory | None = None) -> str:
     emoji_data = get_emoji_data()
     if not emoji_category:
-        category = random.choice(list(EmojiCategory))
+        category = random.choice(list(EmojiCategory)).value
     else:
-        category = emoji_category.value  # type: ignore[assignment]
+        category = emoji_category.value
     emoji_list = emoji_data.get(str(category))
     if not emoji_list:
         raise ValueError("Emoji category not found")
