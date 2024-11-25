@@ -12,6 +12,8 @@ license: mit
 
 Emoji-Chat is a simple chat application that allows users to send messages as emoji.
 
+Inspired by [obscure64](https://github.com/vvanglro/obscure64).
+
 ## Features
 
 ![chat.png](chat.png)
