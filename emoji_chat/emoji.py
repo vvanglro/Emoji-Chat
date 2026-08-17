@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import functools
 import json
 import random
@@ -18,14 +19,14 @@ class EmojiCategory(IntEnum):
 
 def random_select_unique_characters(emoji_list: list, num_characters: int) -> str:
     if len(emoji_list) < num_characters:
-        raise ValueError("Input string must contain at least {} unique characters".format(num_characters))
+        raise ValueError(f"Input string must contain at least {num_characters} unique characters")
 
     selected_chars = random.sample(emoji_list, num_characters)
     processed_chars = [char.encode().decode("unicode_escape") for char in selected_chars]
     return "".join(processed_chars)
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_emoji_data() -> dict:
     with open("emoji_chat/emoji.json", "r") as f:
         return json.loads(f.read())

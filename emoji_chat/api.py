@@ -1,19 +1,19 @@
 from __future__ import annotations
+
 import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-
+from fastapi.templating import Jinja2Templates
+from obscure64 import Obscure64
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from obscure64 import Obscure64
 from starlette.websockets import WebSocketState
 
-from emoji_chat.db import RedisServerObj, Message
+from emoji_chat.db import Message, RedisServerObj
 from emoji_chat.emoji import get_emoji
 
 
